@@ -74,11 +74,16 @@ class App {
     (this.map = map),
       (this.mapEvent = mapEvent),
       (this.workouts = []),
-      this.zoomLevel = 13,
+      (this.zoomLevel = 13),
+      //Get users position
       this._getPosition();
+    //Atach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevetionField);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
+    //Get data from local storge
+
+    this._getLocaleStorage();
   }
 
   _getPosition() {
@@ -95,12 +100,9 @@ class App {
     const { latitude } = position.coords;
     const { longitude } = position.coords;
 
-    //  console.log(latitude, longitude);
-
     const coords = [latitude, longitude];
 
-    this.map = L.map('map').setView(coords,this.zoomLevel);
-    // console.log(map);
+    this.map = L.map('map').setView(coords, this.zoomLevel);
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
@@ -108,6 +110,9 @@ class App {
     }).addTo(this.map);
 
     this.map.on('click', this._showForm.bind(this));
+    this.workouts.forEach(work => {
+      this._renderWorkoutMarker(work);
+    });
   }
 
   _showForm(mapE) {
@@ -145,7 +150,6 @@ class App {
     const { lat, lng } = this.mapEvent.latlng;
     let workout;
 
-    console.log(lat, lng);
     // If workout running, create running object
     if (type === 'running') {
       const cadence = +inputCadence.value;
@@ -189,10 +193,9 @@ class App {
     this._hideForm();
 
     // Set local storage to all workouts
-    // this._setLocalStorage();
+    this._setLocalStorage();
   }
   _renderWorkoutMarker(workout) {
-    console.log(workout);
     L.marker(workout.coords)
       .addTo(this.map)
       .bindPopup(
@@ -268,13 +271,31 @@ class App {
       work => work.id === workoutEl.dataset.id
     );
 
-    this.map.setView(workout.coords,this.zoomLevel,{
-        animate:true,
-        pan:{
-            duration:1
-        }
-    })
-    console.log(workout)
+    this.map.setView(workout.coords, this.zoomLevel, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
+    console.log(workout);
+  }
+  _setLocalStorage() {
+    localStorage.setItem('workout', JSON.stringify(this.workouts));
+  }
+  _getLocaleStorage() {
+    const data = JSON.parse(localStorage.getItem('workout'));
+
+    if (!data) return;
+
+    this.workouts = data;
+
+    this.workouts.forEach(work => {
+      this._renderWorkout(work);
+    });
+  }
+  reset() {
+    localStorage.removeItem('workout');
+    location.reload();
   }
 }
 
